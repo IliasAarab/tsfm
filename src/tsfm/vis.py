@@ -16,7 +16,7 @@ def plot_preds(df, y_pred, title="OOS predictions"):
     oos_index = df.index[-n_oos:]
     oos_true = df["y"].iloc[-n_oos:]
 
-    plt.figure(figsize=(10, 4))
+    fig, ax = plt.subplots(figsize=(10, 4))
     plt.plot(df.index, df["y"], color="gray", label="True (All)", linewidth=1)
     plt.axvline(oos_start, color="red", linestyle="--", label="OOS Start")
 
@@ -28,4 +28,3 @@ def plot_preds(df, y_pred, title="OOS predictions"):
     plt.title(title)
     plt.legend()
     plt.tight_layout()
-    plt.show()

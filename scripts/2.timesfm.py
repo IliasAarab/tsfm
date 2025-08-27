@@ -1,0 +1,60 @@
+# %% Setup
+from tsfm import generator, ols_estimator, plot_preds
+import matplotlib.pyplot as plt
+import torch
+from transformers import TimesFmModelForPrediction
+
+# %% Hyperparams
+N_OOS = 10  
+
+# %% Data
+df = generator()
+print("Snippet of dataset:")
+print(df.head())
+
+# %% Preds
+
+# ── settings ───────────────────────────────────────────────────────────
+MODEL_ID = "google/timesfm-2.0-500m-pytorch"
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+CONTEXT_LEN = 32
+
+# df must exist and contain column "y"
+# ----------------------------------------------------------------------
+past = torch.tensor(
+    df["y"].values[:-N_OOS][-CONTEXT_LEN:], dtype=torch.bfloat16, device=DEVICE
+).unsqueeze(0)  # (1, T)
+freq = torch.tensor([0], dtype=torch.long, device=DEVICE)
+
+model = TimesFmModelForPrediction.from_pretrained(
+    MODEL_ID,
+    torch_dtype=torch.bfloat16,
+    attn_implementation="sdpa",
+    device_map=DEVICE,
+)
+model.eval()
+
+with torch.no_grad():
+    out = model(
+        past_values=past,
+        freq=freq,
+        forecast_context_len=CONTEXT_LEN,
+        truncate_negative=False,
+        return_dict=True,
+    )
+
+# ── extract statistics ────────────────────────────────────────────────
+full = out.full_predictions[0, :, :N_OOS].float().cpu().numpy()  # (Q+1, H)
+
+q_list = model.config.quantiles  #
+idx_lo = q_list.index(0.1)
+idx_med = q_list.index(0.5)
+idx_hi = q_list.index(0.9)
+
+mean_pred = full[0]
+median_pred = full[1 + idx_med]
+lower = full[1 + idx_lo]
+upper = full[1 + idx_hi]
+
+# %%
+plot_preds(df, mean_pred, title="OOS predictions: TimesFM")
