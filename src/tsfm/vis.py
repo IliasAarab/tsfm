@@ -17,14 +17,15 @@ def plot_preds(df, y_pred, title="OOS predictions"):
     oos_true = df["y"].iloc[-n_oos:]
 
     fig, ax = plt.subplots(figsize=(10, 4))
-    plt.plot(df.index, df["y"], color="gray", label="True (All)", linewidth=1)
-    plt.axvline(oos_start, color="red", linestyle="--", label="OOS Start")
+    ax.plot(df.index, df["y"], color="gray", label="True (All)", linewidth=1)
+    ax.axvline(oos_start, color="red", linestyle="--", label="OOS Start")
 
-    plt.plot(oos_index, oos_true, label="True (OOS)", color="black", marker="o")
-    plt.plot(oos_index, y_pred, label="Predicted (OOS)", color="tab:blue", marker="x")
+    ax.plot(oos_index, oos_true, label="True (OOS)", color="black", marker="o")
+    ax.plot(oos_index, y_pred, label="Predicted (OOS)", color="tab:blue", marker="x")
 
-    plt.xlabel("Time Index")
-    plt.ylabel("y")
-    plt.title(title)
-    plt.legend()
+    ax.set_xlabel("Time Index")
+    ax.set_ylabel("y")
+    ax.set_title(title)
+    ax.legend()
     plt.tight_layout()
+    return ax
