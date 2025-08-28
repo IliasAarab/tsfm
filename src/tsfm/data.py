@@ -11,7 +11,7 @@ def generator(
     trend=0.01,
     season_period=12,
     season_ampl=1.0,
-    seed=None,
+    seed=0,
 ):
     """
     Simulate time series data:
@@ -27,7 +27,7 @@ def generator(
         trend (float): Linear trend coefficient.
         season_period (int): Period of the seasonality.
         season_ampl (float): Amplitude of the seasonality.
-        seed (int or None): Random seed.
+        seed (int): Random seed.
 
     Returns:
         pd.DataFrame with columns ['x', 'y']
@@ -52,6 +52,7 @@ def generator(
         )
 
     df = pd.DataFrame({"x": x[1:], "y": y[1:]})
+    df.index = pd.date_range("2000-01", periods=len(df), freq="M")
     return df
 
 
