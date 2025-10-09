@@ -1,0 +1,83 @@
+import numpy as np
+import pandas as pd
+from gluonts.dataset.pandas import PandasDataset
+from gluonts.dataset.split import TestData, split
+from pandas.tseries.frequencies import to_offset
+from uni2ts.model.moirai import MoiraiForecast, MoiraiModule
+
+from tsfm.models.base import Model
+
+MODEL_ID = "Salesforce/moirai-1.1-R-small"
+
+
+def make_fc_df(forecasts, y_true_series: pd.Series) -> pd.DataFrame:
+    out = []
+    for fc in forecasts:
+        off = to_offset("M")
+
+        # start date -> Timestamp (align period to period-end)
+        start = fc.start_date.to_timestamp(how="end").date()
+
+        horizon = len(fc.mean)
+        oos_idx = pd.date_range(start=start, periods=horizon, freq=off)
+        cutoff = start - off
+
+        y_pred = np.asarray(fc.mean)  # mean = point forecast
+        y_true = y_true_series.reindex(oos_idx).to_numpy()
+
+        out.append(
+            pd.DataFrame({
+                "cutoff": cutoff,
+                "oos_date": oos_idx,
+                "y_true": y_true,
+                "y_pred": y_pred,
+            })
+        )
+
+    return pd.concat(out, ignore_index=True).sort_values(["cutoff", "oos_date"]).set_index(["cutoff", "oos_date"])
+
+
+def prepare_data(
+    df: pd.DataFrame,
+    y: str,
+    X: list[str] | None = None,
+    horizon: int = 1,
+    oos_start: str = "2020-01-31",
+) -> TestData:
+    ds = PandasDataset(dataframes=df, target=y, freq="M", past_feat_dynamic_real=X)
+
+    # generate <horizon> rolling fc for each <window=oos_date>, and move by <distance> forward
+    n_oos = int(sum(df.index >= oos_start))
+    _, test_tmpl = split(ds, offset=-n_oos)
+    return test_tmpl.generate_instances(prediction_length=horizon, windows=n_oos - horizon + 1, distance=1)
+
+
+class Moirai(Model, name="moirai"):
+    @staticmethod
+    def get_model(ctx_len: int, horizon: int, n_covariates: int) -> MoiraiForecast:
+        return MoiraiForecast(
+            module=MoiraiModule.from_pretrained(MODEL_ID),
+            prediction_length=horizon,
+            context_length=ctx_len,
+            patch_size="auto",
+            num_samples=100,
+            target_dim=1,
+            feat_dynamic_real_dim=0,
+            past_feat_dynamic_real_dim=n_covariates,
+        )
+
+    def _pred(
+        self,
+        df: pd.DataFrame,
+        y: str,
+        X: list[str] | None = None,
+        ctx_len: int = 1,
+        horizon: int = 1,
+        oos_start: str = "2020-01-31",
+    ) -> pd.DataFrame:
+        test_data = prepare_data(df, y, X, horizon, oos_start)
+        mdl = self.get_model(ctx_len, horizon, n_covariates=len(X) if X else 0)
+
+        predictor = mdl.create_predictor(batch_size=256)
+        forecasts = list(predictor.predict(test_data.input))
+        return make_fc_df(forecasts, df[y])

@@ -42,14 +42,7 @@ def generator(
     tr = trend * t_idx
 
     for t in range(1, n + 1):
-        y[t] = (
-            phi * y[t - 1]
-            + beta0 * x[t]
-            + beta1 * x[t - 1]
-            + tr[t - 1]
-            + season[t - 1]
-            + eps[t]
-        )
+        y[t] = phi * y[t - 1] + beta0 * x[t] + beta1 * x[t - 1] + tr[t - 1] + season[t - 1] + eps[t]
 
     df = pd.DataFrame({"x": x[1:], "y": y[1:]})
     df.index = pd.date_range("2000-01", periods=len(df), freq="M")
