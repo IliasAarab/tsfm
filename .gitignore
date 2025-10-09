@@ -10,3 +10,4 @@ wheels/
 .venv
 
 scripts/repl.py
+uv.lock
