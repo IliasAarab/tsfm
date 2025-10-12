@@ -100,26 +100,50 @@ class ForecastOutput:
         return_ax: bool = False,
     ) -> Axes | None:
         """
-        Line plot of y_true vs y_pred for a given horizon (in months).
-        Selects rows where (oos_month - cutoff_month) == horizon.
-        Index on x-axis is the OOS date (MultiIndex level 1).
+        Line plot of y_true vs y_pred for a given horizon (months).
+        Adds 50% and 80% predictive intervals if quantile_* columns exist.
         """
         g = get_horizon_groupby(self.df_preds)
         m = g == horizon
         if not m.any():
-            msg = f"No rows for horizon={horizon}."
-            raise ValueError(msg)
+            raise ValueError(f"No data for {horizon=}.")
 
         sub = self.df_preds.loc[m].copy()
-
-        # x-axis: oos_date (2nd level)
         sub.index = pd.DatetimeIndex(sub.index.get_level_values(1), name="oos_date")
         sub.sort_index(inplace=True)
-
         if start is not None or end is not None:
             sub = sub.loc[start:end]
 
         ax = ax or plt.gca()
+
+        # --- Quantile fan: 80% then 50% (plot wider first, then narrower) ---
+        qcols = [c for c in sub.columns if c.startswith("quantile_")]
+        if qcols:
+
+            def q_level(col: str) -> float:
+                # "quantile_0.1" -> 0.1
+                return float(col.split("_", 1)[1])
+
+            def closest_quantile(target: float) -> str:
+                return min(qcols, key=lambda c: abs(q_level(c) - target))
+
+            bands = [
+                (0.10, 0.90, "80% PI", 0.99),
+                (0.25, 0.75, "50% PI", 0.99),
+            ]
+            for lo_tgt, hi_tgt, label, alpha in bands:
+                q_lo = closest_quantile(lo_tgt)
+                q_hi = closest_quantile(hi_tgt)
+                ax.fill_between(
+                    sub.index,
+                    sub[q_lo].astype(float),
+                    sub[q_hi].astype(float),
+                    alpha=alpha,
+                    label=label,
+                    linewidth=3,
+                )
+
+        # y_true and point preds
         ax.plot(sub["y_true"], lw=2, alpha=0.9, label="y_true", c="k", ls="--")
         ax.scatter(sub.index, sub["y_pred"], lw=2, alpha=0.9, label="y_pred", c="firebrick")
 

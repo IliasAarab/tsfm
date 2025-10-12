@@ -15,20 +15,16 @@ def make_fc_df(forecasts, y_true_series: pd.Series) -> pd.DataFrame:
     for fc in forecasts:
         off = to_offset("M")
         start = fc.start_date.to_timestamp(how="end").date()
-        horizon = len(fc.quantile(0.5))  # Moirai2 uses quantiles
+        horizon = len(fc.quantile(0.5))
         oos_idx = pd.date_range(start=start, periods=horizon, freq=off)
         cutoff = start - off
 
-        y_pred = np.asarray(fc.quantile(0.5))  # median as point forecast
+        y_pred = fc.quantile(0.5)  # median as point forecast
+        quantiles = {f"quantile_{q}": fc.quantile(q) for q in [i / 10 for i in range(1, 10)]}
         y_true = y_true_series.reindex(oos_idx).to_numpy()
 
         out.append(
-            pd.DataFrame({
-                "cutoff": cutoff,
-                "oos_date": oos_idx,
-                "y_true": y_true,
-                "y_pred": y_pred,
-            })
+            pd.DataFrame({"cutoff": cutoff, "oos_date": oos_idx, "y_true": y_true, "y_pred": y_pred, **quantiles})
         )
 
     return pd.concat(out, ignore_index=True).sort_values(["cutoff", "oos_date"]).set_index(["cutoff", "oos_date"])
@@ -49,9 +45,12 @@ def prepare_data(
 
 class Moirai2(Model, name="moirai2"):
     @staticmethod
-    def get_model(ctx_len: int, horizon: int, n_covariates: int) -> Moirai2Forecast:
+    def get_backbone():
+        return Moirai2Module.from_pretrained(MODEL_ID)
+
+    def get_model(self, ctx_len: int, horizon: int, n_covariates: int) -> Moirai2Forecast:
         return Moirai2Forecast(
-            module=Moirai2Module.from_pretrained(MODEL_ID),
+            module=self.get_backbone(),
             prediction_length=horizon,
             context_length=ctx_len,
             target_dim=1,

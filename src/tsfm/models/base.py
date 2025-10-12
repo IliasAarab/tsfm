@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import ClassVar
+from typing import Any, ClassVar
 
 import pandas as pd
 
@@ -16,7 +16,14 @@ class Model(ABC):
 
     @classmethod
     def build(cls, *, name: str, **kwargs):
-        return cls.registry[name](**kwargs)
+        print(f"Building {name}...", end=" ")  # noqa: T201
+        mdl = cls.registry[name](**kwargs)
+        mdl.get_backbone()
+        print(f"{name} has been build!")  # noqa: T201
+        return mdl
+
+    @abstractmethod
+    def get_backbone(self, *args, **kwargs) -> Any: ...
 
     @abstractmethod
     def _pred(

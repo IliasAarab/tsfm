@@ -78,6 +78,9 @@ def build_oos_panel(ys: pd.Series, *, y_lags: int, horizon: int, oos_start: str)
 
 
 class ARModel(Model, name="armodel"):
+    def get_backbone(self):  # noqa: PLR6301
+        return None
+
     def _pred(  # noqa: PLR6301
         self,
         df: pd.DataFrame,

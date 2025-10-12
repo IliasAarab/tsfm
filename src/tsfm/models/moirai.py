@@ -22,16 +22,12 @@ def make_fc_df(forecasts, y_true_series: pd.Series) -> pd.DataFrame:
         oos_idx = pd.date_range(start=start, periods=horizon, freq=off)
         cutoff = start - off
 
-        y_pred = np.asarray(fc.mean)  # mean = point forecast
+        y_pred = fc.quantile(0.5)  # median = point forecast
+        quantiles = {f"quantile_{q}": fc.quantile(q) for q in [i / 10 for i in range(1, 10)]}
         y_true = y_true_series.reindex(oos_idx).to_numpy()
 
         out.append(
-            pd.DataFrame({
-                "cutoff": cutoff,
-                "oos_date": oos_idx,
-                "y_true": y_true,
-                "y_pred": y_pred,
-            })
+            pd.DataFrame({"cutoff": cutoff, "oos_date": oos_idx, "y_true": y_true, "y_pred": y_pred, **quantiles})
         )
 
     return pd.concat(out, ignore_index=True).sort_values(["cutoff", "oos_date"]).set_index(["cutoff", "oos_date"])
@@ -47,16 +43,19 @@ def prepare_data(
     ds = PandasDataset(dataframes=df, target=y, freq="M", past_feat_dynamic_real=X)
 
     # generate <horizon> rolling fc for each <window=oos_date>, and move by <distance> forward
-    n_oos = int(sum(df.index >= oos_start))
+    n_oos = int((df.index >= oos_start).sum())
     _, test_tmpl = split(ds, offset=-n_oos)
     return test_tmpl.generate_instances(prediction_length=horizon, windows=n_oos - horizon + 1, distance=1)
 
 
 class Moirai(Model, name="moirai"):
     @staticmethod
-    def get_model(ctx_len: int, horizon: int, n_covariates: int) -> MoiraiForecast:
+    def get_backbone():
+        return MoiraiModule.from_pretrained(MODEL_ID)
+
+    def get_model(self, ctx_len: int, horizon: int, n_covariates: int) -> MoiraiForecast:
         return MoiraiForecast(
-            module=MoiraiModule.from_pretrained(MODEL_ID),
+            module=self.get_backbone(),
             prediction_length=horizon,
             context_length=ctx_len,
             patch_size="auto",
