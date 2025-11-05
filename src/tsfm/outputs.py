@@ -51,7 +51,6 @@ class ForecastOutput:
     def metric(self, name: Literal["rmsfe", "mae", "me"]) -> pd.DataFrame:
         return getattr(self, name)
 
-    # ---- summary -------------------------------------------------------------
     def _summary(self, digits: int = 4) -> str:
         """Return a statsmodels-like text summary with metrics side by side."""
         idx = self.df_preds.index
@@ -101,54 +100,76 @@ class ForecastOutput:
     ) -> Axes | None:
         """
         Line plot of y_true vs y_pred for a given horizon (months).
-        Adds 50% and 80% predictive intervals if quantile_* columns exist.
+        Adds predictive intervals if quantile_* columns exist.
         """
         g = get_horizon_groupby(self.df_preds)
         m = g == horizon
         if not m.any():
             raise ValueError(f"No data for {horizon=}.")
 
+        # MultiIndex (cutoff, oos_date); use oos_date as x
         sub = self.df_preds.loc[m].copy()
-        sub.index = pd.DatetimeIndex(sub.index.get_level_values(1), name="oos_date")
+        oos = sub.index.get_level_values(1)
+        sub.index = pd.DatetimeIndex(oos, name="oos_date")
         sub.sort_index(inplace=True)
+
         if start is not None or end is not None:
             sub = sub.loc[start:end]
 
         ax = ax or plt.gca()
 
-        # --- Quantile fan: 80% then 50% (plot wider first, then narrower) ---
+        # --- Quantile fan ---
         qcols = [c for c in sub.columns if c.startswith("quantile_")]
-        if qcols:
 
-            def q_level(col: str) -> float:
-                # "quantile_0.1" -> 0.1
-                return float(col.split("_", 1)[1])
+        def q_level(col: str) -> float:
+            return float(col.split("_", 1)[1])
 
-            def closest_quantile(target: float) -> str:
-                return min(qcols, key=lambda c: abs(q_level(c) - target))
+        # sort to have deterministic order
+        qcols = sorted(qcols, key=q_level)
+        qvals = np.array([q_level(c) for c in qcols])
 
-            bands = [
-                (0.10, 0.90, "80% PI", 0.99),
-                (0.25, 0.75, "50% PI", 0.99),
-            ]
-            for lo_tgt, hi_tgt, label, alpha in bands:
-                q_lo = closest_quantile(lo_tgt)
-                q_hi = closest_quantile(hi_tgt)
-                ax.fill_between(
-                    sub.index,
-                    sub[q_lo].astype(float),
-                    sub[q_hi].astype(float),
-                    alpha=alpha,
-                    label=label,
-                    linewidth=3,
-                )
+        def nearest_pair(target_lo: float, target_hi: float):
+            lo_idx = np.argmin(np.abs(qvals - target_lo))
+            hi_idx = np.argmin(np.abs(qvals - target_hi))
+            lo_col = qcols[lo_idx]
+            hi_col = qcols[hi_idx]
+            actual_coverage = qvals[hi_idx] - qvals[lo_idx]
+            return lo_col, hi_col, actual_coverage
 
-        # y_true and point preds
-        ax.plot(sub["y_true"], lw=2, alpha=0.9, label="y_true", c="k", ls="--")
-        ax.scatter(sub.index, sub["y_pred"], lw=2, alpha=0.9, label="y_pred", c="firebrick")
+        # wider band first, then narrower
+        for target_lo, target_hi, nominal_label, alpha in [
+            (0.10, 0.90, "80% PI", 0.2),
+            (0.20, 0.8, "60% PI", 0.4),
+        ]:
+            q_lo, q_hi, actual_cov = nearest_pair(target_lo, target_hi)
+            ax.fill_between(
+                sub.index,
+                sub[q_lo].astype(float),
+                sub[q_hi].astype(float),
+                alpha=alpha,
+                label=nominal_label,
+            )
+
+        # y_true line and point forecasts
+        ax.plot(
+            sub.index,
+            sub["y_true"],
+            lw=2,
+            alpha=0.9,
+            label="y_true",
+            c="k",
+            ls="--",
+        )
+        ax.scatter(
+            sub.index,
+            sub["y_pred"],
+            alpha=0.9,
+            label="y_pred",
+            c="firebrick",
+        )
 
         ax.set_xlabel("OOS date")
-        ax.set_ylabel("Value")
+        ax.set_ylabel("Prediction")
         ttl = self.meta.get("model_name") or "Forecast"
         ax.set_title(f"{ttl} - y_true vs y_pred @ horizon={horizon}")
         ax.grid(True, alpha=0.3)
