@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 from gluonts.dataset.pandas import PandasDataset
 from gluonts.dataset.split import TestData, split
