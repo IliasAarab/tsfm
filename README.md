@@ -1,16 +1,161 @@
-# UML Diagram - TSFM Codebase
+<div align="center">
+  <img src="docs/img/logo.png" alt="TSFM Logo" width="400"/>
+</div>
 
-## Overview
+# Time Series Forecasting Models (TSFM)
+
+A unified Python framework for time series forecasting that makes it easy to switch between classical statistical models and modern foundation models with just a single line of code.
+
+## Why TSFM?
+
+Forecasting time series data shouldn't require rewriting your entire pipeline when you want to try a different model. TSFM provides:
+
+- **One Interface, Multiple Models**: Switch from autoregressive models to state-of-the-art foundation models (Moirai, Chronos) by changing just the model name
+- **Works With Any Frequency**: Automatically detects whether your data is monthly, quarterly, weekly, or daily - no manual configuration needed
+- **Batteries Included**: Built-in metrics (RMSFE, MAE, ME), visualizations, and prediction intervals out of the box
+- **Production Ready**: Consistent API across all models makes it easy to integrate into your workflow
+
+## Quick Start
+
+### Installation
+
+Create a dedicated conda environment:
+
+```bash
+conda create -n tsfm python==3.12 ipykernel
+conda activate tsfm
+pip install tsfmecb
+# Optional: register Jupyter kernel if you work within a notebook environment
+python -m ipykernel install --user --name=tsfm --display-name "tsfm"
+```
+
+### Your First Forecast
+
+```python
+from tsfm import Model, generator
+
+# Generate some sample data (or use your own DataFrame)
+df = generator()
+
+# Build a model - try "armodel", "moirai", "moirai2", "chronos", or "chronos2"
+mdl = Model.build(name="moirai2")
+
+# Generate forecasts
+yhs = mdl.pred(df, y="y", ctx_len=12, horizon=6, oos_start="2005-01-31")
+
+# View results
+yhs.summary()  # See metrics
+yhs.plot_actual_vs_pred(horizon=1)  # Visualize forecasts
+```
+
+That's it! The model automatically:
+- Detects your data frequency
+- Handles the forecasting
+- Computes accuracy metrics
+- Provides prediction intervals
+
+### Try Different Models
+
+The beauty of TSFM is how easy it is to compare models:
+
+```python
+# Classical autoregressive model
+mdl_ar = Model.build(name="armodel")
+yhs_ar = mdl_ar.pred(df, y="y", ctx_len=12, horizon=6, oos_start="2005-01-31")
+
+# Salesforce Moirai foundation model
+mdl_moirai = Model.build(name="moirai2")
+yhs_moirai = mdl_moirai.pred(df, y="y", ctx_len=12, horizon=6, oos_start="2005-01-31")
+
+# Amazon Chronos foundation model
+mdl_chronos = Model.build(name="chronos2")
+yhs_chronos = mdl_chronos.pred(df, y="y", ctx_len=12, horizon=6, oos_start="2005-01-31")
+
+# Compare accuracy
+print(f"AR RMSFE: {yhs_ar.rmsfe.values.mean():.3f}")
+print(f"Moirai RMSFE: {yhs_moirai.rmsfe.values.mean():.3f}")
+print(f"Chronos RMSFE: {yhs_chronos.rmsfe.values.mean():.3f}")
+```
+
+### Works With Any Frequency
+
+Have quarterly data? No problem:
+
+```python
+# Resample to quarterly
+df_quarterly = df.resample('Q').mean()
+
+# Same code works - frequency is detected automatically
+mdl = Model.build(name="moirai2")
+yhs = mdl.pred(df_quarterly, y="y", ctx_len=4, horizon=2, oos_start="2005Q1")
+
+# horizon=1 now means "next quarter" (not next month!)
+yhs.plot_actual_vs_pred(horizon=1)
+```
+
+Supports monthly (M), quarterly (Q), weekly (W), daily (D), and any pandas frequency.
+
+## Available Models
+
+| Model | Type | Covariates | Speed |
+|-------|------|------------|-------|
+| `armodel` | Classical AR | ❌ | ⚡⚡⚡ |
+| `moirai` | Foundation (Salesforce 1.1) | ✅ | ⚡⚡ |
+| `moirai2` | Foundation (Salesforce 2.0) | ✅ | ⚡⚡ |
+| `chronos` | Foundation (Amazon Bolt) | ❌ | ⚡⚡ |
+| `chronos2` | Foundation (Amazon 2.0) | ✅ | ⚡⚡ |
+
+## What You Get
+
+Every forecast returns a `ForecastOutput` object with:
+
+- **Predictions**: Full DataFrame with actuals vs predictions by horizon and quantile
+- **Metrics**: RMSFE, MAE, ME computed automatically
+- **Visualization**: Built-in plotting with prediction intervals
+- **Uncertainty**: Quantile forecasts (10th, 50th, 90th percentiles, etc.)
+
+```python
+# Access predictions
+yhs.df_preds  # MultiIndex DataFrame
+
+# Get metrics by horizon
+yhs.rmsfe  # Root Mean Squared Forecast Error
+yhs.mae    # Mean Absolute Error
+yhs.me     # Mean Error
+
+# Quick summary
+yhs.summary()
+
+# Plot with uncertainty bands
+yhs.plot_actual_vs_pred(horizon=1)
+```
+
+## Learn More
+
+Check out the [tutorial notebook](https://github.com/IliasAarab/tsfm/blob/main/notebooks/tutorial.ipynb) for:
+- Data format requirements
+- Model selection guidance
+- Uncertainty quantification
+- Troubleshooting tips
+- Advanced usage examples
+
+---
+
+## Technical Documentation
+
+### Architecture Overview
 
 TSFM is a unified time series forecasting framework that supports multiple frequencies (monthly, quarterly, etc.) with automatic frequency inference. It provides a consistent interface across classical statistical models and modern foundation models.
 
-## Key Features
+### Key Features
 
 - **Automatic Frequency Inference**: No need to specify data frequency - it's detected from the DataFrame's DatetimeIndex
 - **Multiple Model Support**: Classical AR models and state-of-the-art foundation models (Moirai, Chronos)
 - **Unified API**: Consistent interface across all models with `pred()` method
 - **Frequency-Aware Metrics**: Horizons adapt to your data frequency (horizon=1 means next period, regardless of frequency)
 - **Rich Outputs**: Built-in metrics (RMSFE, MAE, ME) and visualization with prediction intervals
+
+### UML Diagram
 
 ```mermaid
 classDiagram
@@ -302,7 +447,7 @@ classDiagram
 - **Facade**: Simple interface (`pred()`) over complex forecasting logic
 - **Frequency Inference**: Automatic detection and propagation of time series frequency throughout the pipeline
 
-## Frequency Support
+### Frequency Support
 
 All models automatically detect and adapt to your data's frequency:
 
@@ -318,9 +463,9 @@ The frequency is:
 3. Stored in `ForecastOutput.meta['freq']`
 4. Used for horizon calculations, metrics, and plotting
 
-## Usage Examples
+### Detailed API Usage
 
-### Basic Usage - Monthly Data
+#### Monthly Data Example
 
 ```python
 from tsfm import Model, generator
@@ -339,7 +484,7 @@ yhs.summary()
 yhs.plot_actual_vs_pred(horizon=1)
 ```
 
-### Quarterly Data
+#### Quarterly Data Example
 
 ```python
 # Resample to quarterly (frequency auto-detected as 'Q')
@@ -353,7 +498,7 @@ yhs = mdl.pred(df_quarterly, y="y", ctx_len=4, horizon=2, oos_start="2005Q1")
 yhs.plot_actual_vs_pred(horizon=1)
 ```
 
-### Available Models
+#### Model Selection
 
 ```python
 # Classical statistical model
@@ -368,7 +513,7 @@ mdl = Model.build(name="chronos")   # Chronos-Bolt
 mdl = Model.build(name="chronos2")  # Chronos 2.0
 ```
 
-### Accessing Metrics
+#### Accessing Metrics and Predictions
 
 ```python
 # Individual metrics
