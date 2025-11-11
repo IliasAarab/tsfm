@@ -19,7 +19,7 @@ dependencies = [
     "statsmodels>=0.14.5",
     "torch",
     "transformers>=4.54.1",
-    "uni2ts",
+    "uni2ts>=2.0.0",
 ]
 
 [build-system]
@@ -32,5 +32,3 @@ dev = [
     "ipywidgets>=8.1.7",
 ]
 
-[tool.uv.sources]
-uni2ts = { git = "https://github.com/SalesforceAIResearch/uni2ts", rev = "main" }
