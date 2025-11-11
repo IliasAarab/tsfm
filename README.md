@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/img/logo.png" alt="TSFM Logo" width="400"/>
+  <img src="https://raw.githubusercontent.com/IliasAarab/tsfm/main/docs/img/logo.png" alt="TSFM Logo" width="400"/>
 </div>
 
 # Time Series Forecasting Models (TSFM)
