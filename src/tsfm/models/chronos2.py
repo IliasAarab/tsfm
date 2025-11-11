@@ -41,7 +41,7 @@ def make_fc_df(forecasts: pd.DataFrame, y_true: pd.DataFrame, horizon: int) -> p
 class Chronos2(Model, name="chronos2"):
     @staticmethod
     def get_backbone() -> Chronos2Pipeline:
-        return BaseChronosPipeline.from_pretrained(MODEL_ID)
+        return BaseChronosPipeline.from_pretrained(MODEL_ID, device_map="auto")
 
     def _pred(
         self,

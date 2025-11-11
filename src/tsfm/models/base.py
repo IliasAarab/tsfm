@@ -2,12 +2,15 @@ from abc import ABC, abstractmethod
 from typing import Any, ClassVar
 
 import pandas as pd
+import torch
 
 from tsfm.outputs import ForecastOutput
 
 
 class Model(ABC):
     registry: ClassVar[dict[str, type["Model"]]] = {}
+    is_cuda = torch.cuda.is_available()
+    is_blfoat = torch.cuda.is_bf16_supported(including_emulation=False) if is_cuda else False
 
     def __init_subclass__(cls, name: str, **kwargs) -> None:
         super().__init_subclass__(**kwargs)

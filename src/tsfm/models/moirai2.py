@@ -68,6 +68,6 @@ class Moirai2(Model, name="moirai2"):
     ) -> pd.DataFrame:
         test_data = prepare_data(df, y, X, horizon, oos_start)
         mdl = self.get_model(ctx_len, horizon, n_covariates=len(X) if X else 0)
-        predictor = mdl.create_predictor(batch_size=256)
+        predictor = mdl.create_predictor(batch_size=256, device="auto")
         forecasts = list(predictor.predict(test_data.input))
         return make_fc_df(forecasts, df[y])
