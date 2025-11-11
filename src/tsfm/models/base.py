@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 import pandas as pd
 import torch
 
+from tsfm.data import infer_freq
 from tsfm.outputs import ForecastOutput
 
 
@@ -48,6 +49,7 @@ class Model(ABC):
         horizon: int = 1,
         oos_start: str = "2020-01-31",
     ) -> ForecastOutput:
+        freq = infer_freq(df)
         yhs = self._pred(df, y, X, ctx_len, horizon, oos_start)
-        meta = {"model": self.name, "oos_start": oos_start}
+        meta = {"model": self.name, "oos_start": oos_start, "freq": freq}
         return ForecastOutput(yhs, meta=meta)

@@ -5,22 +5,26 @@ from gluonts.dataset.split import TestData, split
 from pandas.tseries.frequencies import to_offset
 from uni2ts.model.moirai import MoiraiForecast, MoiraiModule
 
+from tsfm.data import infer_freq
 from tsfm.models.base import Model
 
 MODEL_ID = "Salesforce/moirai-1.1-R-small"
 
 
-def make_fc_df(forecasts, y_true_series: pd.Series) -> pd.DataFrame:
+def make_fc_df(forecasts, y_true_series: pd.Series, freq: str) -> pd.DataFrame:
     out = []
     for fc in forecasts:
-        off = to_offset("M")
+        off = to_offset(freq)
 
         # start date -> Timestamp (align period to period-end)
-        start = fc.start_date.to_timestamp(how="end").date()
+        start = fc.start_date.to_timestamp(how="end")
 
         horizon = len(fc.mean)
         oos_idx = pd.date_range(start=start, periods=horizon, freq=off)
-        cutoff = start - off
+
+        # Normalize timestamps to remove time component for proper reindexing
+        oos_idx = pd.DatetimeIndex(oos_idx.normalize())
+        cutoff = pd.Timestamp(start.normalize()) - off
 
         y_pred = fc.quantile(0.5)  # median = point forecast
         quantiles = {f"quantile_{q}": fc.quantile(q) for q in [i / 10 for i in range(1, 10)]}
@@ -39,8 +43,12 @@ def prepare_data(
     X: list[str] | None = None,
     horizon: int = 1,
     oos_start: str = "2020-01-31",
+    freq: str | None = None,
 ) -> TestData:
-    ds = PandasDataset(dataframes=df, target=y, freq="M", past_feat_dynamic_real=X)
+    if freq is None:
+        freq = infer_freq(df)
+
+    ds = PandasDataset(dataframes=df, target=y, freq=freq, past_feat_dynamic_real=X)
 
     # generate <horizon> rolling fc for each <window=oos_date>, and move by <distance> forward
     n_oos = int((df.index >= oos_start).sum())
@@ -74,9 +82,10 @@ class Moirai(Model, name="moirai"):
         horizon: int = 1,
         oos_start: str = "2020-01-31",
     ) -> pd.DataFrame:
-        test_data = prepare_data(df, y, X, horizon, oos_start)
+        freq = infer_freq(df)
+        test_data = prepare_data(df, y, X, horizon, oos_start, freq)
         mdl = self.get_model(ctx_len, horizon, n_covariates=len(X) if X else 0)
 
         predictor = mdl.create_predictor(batch_size=256, device="auto")
         forecasts = list(predictor.predict(test_data.input))
-        return make_fc_df(forecasts, df[y])
+        return make_fc_df(forecasts, df[y], freq)

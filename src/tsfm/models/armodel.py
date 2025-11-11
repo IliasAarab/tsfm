@@ -6,6 +6,7 @@ from pandas import IndexSlice as Idx
 from pandas.tseries.frequencies import to_offset
 from statsmodels.regression.linear_model import RegressionResultsWrapper
 
+from tsfm.data import infer_freq
 from tsfm.exceptions import InvalidInputError
 from tsfm.models.base import Model
 
@@ -52,17 +53,18 @@ def pred(
     return pd.concat(yhs)
 
 
-def _to_month_end(idx: pd.Index) -> pd.DatetimeIndex:
+def _to_period_end(idx: pd.Index, freq: str) -> pd.DatetimeIndex:
+    """Align datetime index to period end based on frequency."""
     idx = pd.DatetimeIndex(idx)
-    return idx.to_period("M").to_timestamp("M")
+    return idx.to_period(freq).to_timestamp(freq)
 
 
-def build_oos_panel(ys: pd.Series, *, y_lags: int, horizon: int, oos_start: str) -> pd.DataFrame:
+def build_oos_panel(ys: pd.Series, *, y_lags: int, horizon: int, oos_start: str, freq: str) -> pd.DataFrame:
     parts: list[pd.DataFrame] = []
     for h in range(1, horizon + 1):
         yhat = pred(ys=ys, y_lags=y_lags, horizon=h, oos_start=oos_start)  # index = oos_date
-        oos_idx = _to_month_end(yhat.index)
-        cutoff_idx = (oos_idx.to_period("M") - h).to_timestamp("M")  # info time (month-end aligned)
+        oos_idx = _to_period_end(yhat.index, freq)
+        cutoff_idx = (oos_idx.to_period(freq) - h).to_timestamp(freq)  # info time (period-end aligned)
 
         df_h = pd.DataFrame(
             {"y_true": ys.reindex(oos_idx).to_numpy(), "y_pred": yhat.to_numpy()},
@@ -71,8 +73,8 @@ def build_oos_panel(ys: pd.Series, *, y_lags: int, horizon: int, oos_start: str)
         parts.append(df_h)
 
     out = pd.concat(parts).sort_index()
-    start = pd.to_datetime(oos_start) - to_offset("M")
-    end = ys.index[-1] - to_offset("M") * horizon
+    start = pd.to_datetime(oos_start) - to_offset(freq)
+    end = ys.index[-1] - to_offset(freq) * horizon
     out = out[Idx[start:end]]
     return out[["y_true", "y_pred"]]
 
@@ -93,5 +95,6 @@ class ARModel(Model, name="armodel"):
         if X:
             msg = "Ilias: No covariates supported for this model!"
             raise InvalidInputError(msg)
+        freq = infer_freq(df)
         y_lags = ctx_len - 1
-        return build_oos_panel(ys=df[y], y_lags=y_lags, horizon=horizon, oos_start=oos_start)
+        return build_oos_panel(ys=df[y], y_lags=y_lags, horizon=horizon, oos_start=oos_start, freq=freq)

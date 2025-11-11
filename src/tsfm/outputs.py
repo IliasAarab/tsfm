@@ -8,12 +8,30 @@ from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 
 
-def get_horizon_groupby(df: pd.DataFrame) -> pd.Index:
-    """1-based monthly horizon: 1=next month, 2=two months ahead, ..."""
+def get_horizon_groupby(df: pd.DataFrame, freq: str | None = None) -> pd.Index:
+    """Calculate horizon index based on frequency.
+
+    For monthly: 1=next month, 2=two months ahead, ...
+    For quarterly: 1=next quarter, 2=two quarters ahead, ...
+
+    Args:
+        df: DataFrame with MultiIndex (cutoff, oos_date).
+        freq: Frequency string (e.g., 'M', 'Q'). If None, infers from index.
+
+    Returns:
+        Index of horizon values.
+    """
     cut = pd.DatetimeIndex(df.index.get_level_values(0))
     oos = pd.DatetimeIndex(df.index.get_level_values(1))
-    cut_ord = cut.to_period("M").astype("int64")
-    oos_ord = oos.to_period("M").astype("int64")
+
+    if freq is None:
+        # Try to infer from the index values
+        freq = pd.infer_freq(cut)
+        if freq is None:
+            freq = "M"  # fallback to monthly
+
+    cut_ord = cut.to_period(freq).astype("int64")
+    oos_ord = oos.to_period(freq).astype("int64")
     return oos_ord - cut_ord
 
 
@@ -24,7 +42,8 @@ class ForecastOutput:
 
     # ---- metrics -------------------------------------------------------------
     def _agg_mean(self, s: pd.Series, name: str, post=None) -> pd.DataFrame:
-        g = get_horizon_groupby(self.df_preds)
+        freq = self.meta.get("freq")
+        g = get_horizon_groupby(self.df_preds, freq=freq)
         out = s.groupby(g).mean()
         if post is not None:
             out = post(out)
@@ -56,7 +75,8 @@ class ForecastOutput:
         idx = self.df_preds.index
         cut = pd.DatetimeIndex(idx.get_level_values(0))
         oos = pd.DatetimeIndex(idx.get_level_values(1))
-        horizons = get_horizon_groupby(self.df_preds)
+        freq = self.meta.get("freq")
+        horizons = get_horizon_groupby(self.df_preds, freq=freq)
         n_obs = len(self.df_preds)
 
         # combine metrics into one DataFrame
@@ -99,13 +119,25 @@ class ForecastOutput:
         return_ax: bool = False,
     ) -> Axes | None:
         """
-        Line plot of y_true vs y_pred for a given horizon (months).
+        Line plot of y_true vs y_pred for a given horizon.
         Adds predictive intervals if quantile_* columns exist.
+
+        Args:
+            horizon: Forecast horizon (1=next period, 2=two periods ahead, etc.)
+            ax: Optional matplotlib Axes to plot on
+            start: Optional start date for plot range
+            end: Optional end date for plot range
+            return_ax: If True, return the Axes object
+
+        Returns:
+            Axes object if return_ax=True, else None
         """
-        g = get_horizon_groupby(self.df_preds)
+        freq = self.meta.get("freq")
+        g = get_horizon_groupby(self.df_preds, freq=freq)
         m = g == horizon
         if not m.any():
-            raise ValueError(f"No data for {horizon=}.")
+            msg = f"No data for horizon={horizon}."
+            raise ValueError(msg)
 
         # MultiIndex (cutoff, oos_date); use oos_date as x
         sub = self.df_preds.loc[m].copy()
@@ -170,7 +202,7 @@ class ForecastOutput:
 
         ax.set_xlabel("OOS date")
         ax.set_ylabel("Prediction")
-        ttl = self.meta.get("model_name") or "Forecast"
+        ttl = self.meta.get("model") or "Forecast"
         ax.set_title(f"{ttl} - y_true vs y_pred @ horizon={horizon}")
         ax.grid(True, alpha=0.3)
         ax.legend()

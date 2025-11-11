@@ -1,5 +1,38 @@
+import warnings
+
 import numpy as np
 import pandas as pd
+
+
+def infer_freq(df: pd.DataFrame) -> str:
+    """Infer frequency from DataFrame index.
+
+    Returns pandas frequency string like 'M', 'Q', 'W', 'D', etc.
+    Falls back to 'M' if inference fails.
+
+    Args:
+        df: DataFrame with DatetimeIndex.
+
+    Returns:
+        Frequency string (e.g., 'M' for monthly, 'Q' for quarterly).
+
+    Raises:
+        TypeError: If DataFrame index is not a DatetimeIndex.
+    """
+    if not isinstance(df.index, pd.DatetimeIndex):
+        msg = "DataFrame index must be DatetimeIndex"
+        raise TypeError(msg)
+
+    freq = pd.infer_freq(df.index)
+    if freq is None:
+        # Try to get from index.freq attribute
+        freq = df.index.freq
+        if freq is None:
+            warnings.warn("Could not infer frequency, defaulting to 'ME' (monthly)", stacklevel=2)
+            return "ME"
+        freq = freq.freqstr
+
+    return freq
 
 
 def generator(
