@@ -40,6 +40,10 @@ class ForecastOutput:
     df_preds: pd.DataFrame = field(repr=False)  # MultiIndex[cutoﬀ, oos_date], cols: y_true,y_pred
     meta: dict[str, Any] = field(default_factory=dict)
 
+    def __repr__(self) -> str:
+        """Return summary as default representation."""
+        return self._summary()
+
     # ---- metrics -------------------------------------------------------------
     def _agg_mean(self, s: pd.Series, name: str, post=None) -> pd.DataFrame:
         freq = self.meta.get("freq")
