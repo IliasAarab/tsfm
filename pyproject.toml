@@ -1,6 +1,6 @@
 [project]
-name = "tsfm"
-version = "0.1.0"
+name = "tsfmecb"
+version = "0.1.4"
 description = "tsfm provides an easy interface to use TimeSeries Foundational Models."
 readme = "README.md"
 authors = [
