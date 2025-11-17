@@ -1,0 +1,364 @@
+---
+title: "ESCB & SSM HACKATHON"
+subtitle: "Foundation Models for Macroeconomic Forecasting"
+author: "Ilias Aarab"
+institute: "DG Economics"
+date: last-modified
+execute:
+ eval: false
+format: 
+    metropolis-beamer-revealjs:
+      transition: slide
+      height: 750
+      footer: ESCB & SSM HACKATHON - Foundation Models
+        
+---
+
+## Econometric Models vs Foundation Models
+
+**Traditional Econometric Approach:**
+
+::: {.incremental style="font-size: 0.85em;"}
+1. **Define** your model (e.g., AR, VAR, DSGE)
+2. **Estimate** parameters on your specific dataset
+3. **Forecast** using the estimated model
+:::
+
+::: {.fragment}
+**Foundation Model Approach:**
+
+::: {.incremental style="font-size: 0.85em;"}
+1. **Pre-train** a large-capacity model on general data (not task-specific)
+2. Model learns **general statistical structures** across diverse time series
+3. **Apply off-the-shelf** to your specific forecasting task - no estimation needed.
+:::
+:::
+
+::: {.fragment}
+::: {.callout-note}
+### Key Insight
+Foundation models are already trained. You skip the estimation step entirely.
+:::
+:::
+
+## Foundation Models: A Paradigm Shift
+
+::::{.columns}
+::: {.column width="50%"}
+**Econometric Models**
+
+- Task-specific
+- Requires domain expertise
+- Limited by data availability
+- Need re-estimation for new data
+- Interpretable parameters
+:::
+
+::: {.column width="50%"}
+**Foundation Models**
+
+- General-purpose
+- Learn from massive datasets
+- Transfer learning across domains
+- Zero-shot forecasting
+- more "black-box" like
+:::
+::::
+
+::: {.fragment}
+::: {.callout-tip}
+### For Macroeconomic Forecasting
+Foundation models can capture complex patterns that traditional models may miss, especially with limited historical data
+:::
+:::
+
+## The Time Series Foundation Model Landscape
+
+Many foundation models exist, each with different training approaches and capabilities:
+
+::: {.incremental}
+- **TimeGPT** (Nixtla)
+- **TimesFM** (Google)
+- **Lag-Llama** (Lag-Llama Team)
+- **Chronos** / **Chronos-2** (Amazon)
+- **Moirai** / **Moirai-2** (Salesforce)
+- **Moment** (CMU)
+- And many others...
+:::
+
+::: {.fragment}
+**Key question:** Which models are suitable for **econometric forecasting**?
+:::
+
+## Requirements for Econometric Forecasting
+
+For macroeconomic forecasting, we need specific capabilities:
+
+::: {.incremental}
+1. **Multivariate Forecasting**
+   - Handle multiple related time series (GDP, inflation, unemployment, etc.)
+   - Capture cross-variable dependencies
+   
+2. **Uncertainty Quantification**
+   - Probabilistic forecasts with prediction intervals
+   - Quantile predictions for risk assessment
+   - Essential for policy decision-making
+:::
+
+::: {.fragment}
+Not all foundation models support both requirements!
+:::
+
+## Recommended Models for Hackathon
+
+Two model families stand out for econometric forecasting:
+
+::::{.columns}
+::: {.column width="50%"}
+**Chronos Family**
+
+- **Chronos-Bolt**: Fast inference
+- **Chronos-2**: Latest, multivariate
+
+✅ Uncertainty quantification  
+✅ Multivariate (Chronos-2)  
+✅ Fast inference  
+:::
+
+::: {.column width="50%"}
+**Moirai Family**
+
+- **Moirai 1.1**: Proven performance
+- **Moirai 2.0**: Latest architecture
+
+✅ Uncertainty quantification  
+✅ Multivariate support  
+✅ Strong generalization  
+:::
+::::
+
+::: {.fragment}
+Both families provide the capabilities needed for robust macroeconomic forecasting!
+:::
+
+## AWS SageMaker Environment
+
+The hackathon runs in a fully-equipped AWS SageMaker environment:
+
+::: {.incremental}
+**Compute Resources:**
+
+- 💻 **CPU instance** for standard workloads
+- 🚀 **GPU instance** for faster model inference
+- 📦 **S3 bucket** for data storage
+
+**Development Tools:**
+
+- 🖥️ **Terminal** with bash access
+- 📓 **Jupyter Lab** for interactive development
+- ✏️ **Python Editor** with LSP support
+- 🐍 **Python 3.12** with Conda and Pip pre-installed
+:::
+
+## Three-Tier Access System
+
+::: {.incremental style="font-size: 0.85em;"}
+We provide **three tiers** of access to foundation models:
+::: 
+
+::: {.incremental style="font-size: 0.85em;"}
+**Tier 1: TSFM Package** ⭐ *Easiest*
+
+- High-level Python package
+- Simple interface to load models and forecast
+- Perfect for getting started quickly
+
+**Tier 2: Ready-Made Notebooks** 
+
+- Pre-configured notebook examples with pre-deployed models
+- Use as starting point for your solution
+- Details provided later in hackathon prep
+
+**Tier 3: Full Flexibility** 🔓 *Most Flexible*
+
+- Complete internet access (GitHub, HuggingFace, PyPI)
+- Install any package you want
+- Access any model you want
+- Tailor the model however you want
+:::
+
+## Tier 1: TSFM Package
+
+![](../img/logo.png){width="30%"}
+
+**Why TSFM?**
+
+::: {.incremental}
+- 🔄 **One Interface, Multiple Models**: Switch from AR to Chronos to Moirai with one line
+- 📅 **Works With Any Frequency**: Automatic detection of monthly, quarterly, weekly, daily
+- 🎁 **Batteries Included**: Metrics (RMSFE, MAE, ME), plots, prediction intervals
+- 🚀 **Production Ready**: Consistent API makes integration seamless
+:::
+
+## Installation
+
+```{.bash}
+# In SageMaker environment - simple one-liner
+pip install tsfmecb
+```
+
+::: {.fragment}
+That's it! No complex setup, no dependency hell.
+:::
+
+## Your First Forecast
+
+```{python}
+#| echo: true
+#| code-line-numbers: "|1|4|7|10-11|14-15"
+from tsfm import Model, generator
+
+# Generate sample data (or use your own DataFrame)
+df = generator()
+
+# Build a model - try "armodel", "moirai", "moirai2", "chronos", or "chronos2"
+mdl = Model.build(name="moirai2")
+
+# Generate forecasts
+yhs = mdl.pred(df, y="y",x=["x"], ctx_len=12, horizon=6, 
+               oos_start="2005-01-31")
+
+# View results
+yhs.summary()  # See metrics
+yhs.plot_actual_vs_pred(horizon=1)  # Visualize forecasts
+```
+
+::: {.fragment}
+That's it! The model automatically:
+:::: {.incremental}
+- Handles loading the backbone + running it efficiently to generate predictions
+- Computes accuracy metrics
+- Provides prediction intervals
+::::
+:::
+
+## Switch Models Effortlessly
+
+The beauty of TSFM is how easy it is to compare models:
+
+```{python}
+#| echo: true
+#| code-line-numbers: "|2|5|8"
+# Classical autoregressive model
+mdl_ar = Model.build(name="armodel")
+
+# Salesforce Moirai foundation model
+mdl_moirai = Model.build(name="moirai2")
+
+# Amazon Chronos foundation model
+mdl_chronos = Model.build(name="chronos2")
+```
+
+::: {.fragment}
+Same interface, different models - no code rewrite needed!
+:::
+
+## Available Models
+
+| Model | Type | Covariates | Speed |
+|-------|------|------------|-------|
+| `armodel` | Classical AR | ❌ | ⚡⚡⚡ |
+| `moirai` | Foundation (Salesforce 1.1) | ✅ | ⚡ |
+| `moirai2` | Foundation (Salesforce 2.0) | ✅ | ⚡⚡⚡ |
+| `chronos` | Foundation (Amazon Bolt) | ❌ | ⚡⚡ |
+| `chronos2` | Foundation (Amazon 2.0) | ✅ | ⚡⚡⚡ |
+
+::: {.fragment}
+::: {.callout-tip}
+### Recommendation
+Start with the simple `armodel` to verify that your output is as expected. 
+:::
+:::
+
+## What You Get
+
+Every forecast returns a `ForecastOutput` object with everything you need:
+
+::::{.columns}
+::: {.column width="50%"}
+**Predictions**
+```{python}
+#| echo: true
+# MultiIndex DataFrame
+yhs.df_preds
+```
+
+**Metrics**
+```{python}
+#| echo: true
+# By horizon
+yhs.rmsfe  # RMSFE
+yhs.mae    # MAE  
+yhs.me     # ME
+```
+:::
+
+::: {.column width="50%"}
+**Visualization**
+```{python}
+#| echo: true
+# Quick summary
+yhs.summary()
+
+# Plot with uncertainty bands
+yhs.plot_actual_vs_pred(horizon=1)
+```
+
+**Uncertainty**
+```{python}
+#| echo: true
+# Quantile forecasts
+yhs.df_preds.xs(0.1, level='quantile')
+yhs.df_preds.xs(0.9, level='quantile')
+```
+:::
+::::
+
+## Tier 2 & Tier 3
+
+**Tier 2: Ready-Made Notebooks** 
+
+- Pre-configured notebooks with deployed models in SageMaker
+- Starting templates for your forecasting solution
+- **Details will be covered later in hackathon prep**
+
+::: {.fragment}
+**Tier 3: Full Flexibility** 🔓
+
+- Complete internet access: GitHub, HuggingFace, PyPI
+- Install any package you want
+- Access any model you want
+- Maximum control for advanced users
+:::
+
+## Get Started
+
+::: {.callout-tip}
+### Resources
+- **GitHub**: [github.com/IliasAarab/tsfm](https://github.com/IliasAarab/tsfm)
+- **Tutorial Notebook**: Complete examples and data format requirements
+- **Documentation**: Full API reference in README
+:::
+
+::: {.fragment}
+```{.bash}
+# Start now in SageMaker
+pip install tsfmecb
+```
+:::
+
+[![](../img/logo.png){width=25%}](https://github.com/IliasAarab/tsfm)
+
+::: aside
+Questions? Contact [Aarab, Ilias](mailto:ilias.aarab@ecb.europa.eu?subject=ECB%20Hackathon%20|%20TSFM)
+:::

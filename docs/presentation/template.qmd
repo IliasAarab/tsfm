@@ -1,0 +1,358 @@
+---
+title: "ECB LLM Clients"
+subtitle: "Connect with the ECB LLM Environment"
+author: "Ilias Aarab"
+institute: "DGE/FPM"
+date: last-modified
+execute:
+ eval: false
+format: 
+    metropolis-beamer-revealjs:
+      transition: slide
+      height: 750
+      footer: llmapi
+        
+---
+
+
+## Unified Python, MATLAB, and R clients for ECB's OpenAI LLM API.
+<!-- TODO show easy installation setup -->
+
+::::{.columns}
+::: {.column width="33%"}
+![](assets/matlab_logo.svg){width="40%"}
+:::
+::: {.column width="33%"}
+![](assets/python_logo.svg){width="40%"}
+:::
+::: {.column width="33%"}
+![](assets/r_logo.svg){width="40%"}
+:::
+::::
+
+::: {.incremental}
+- Consistent interface across `Python`, `MATLAB`, and `R`.\
+- Seamless compatibility across ECB environments (Laptop, Citrix, CML, AML) without modifications.\
+- Simple installation, eliminating technical hurdles so you can focus on implementation.
+:::
+
+## Highest level of abstraction: Chat completions
+
+```{python}
+#| echo: true
+#| code-line-numbers: "|1|3-4|5"
+from llmapi import gpt
+
+# Simple chat completion
+response = gpt("Hi there!")
+print(response)
+```
+
+::: {.fragment style="font-family: monospace; font-size: 1.2em; background-color: #f5f5f5; padding: 10px; border-radius: 5px;"}
+"Hello! How can I assist you today?""
+:::
+
+::: {.fragment}
+```{python}
+#| echo: true
+#| code-line-numbers: "1|2|2-3|2-4"
+# Customize system prompt
+gpt.set_system_prompt("You are a macroeconomics expert.")
+response = gpt("Explain the relationship between interest rates and GDP growth.")
+print(response)
+```
+:::
+
+::: {.fragment style="font-family: monospace; font-size: .7em; background-color: #f5f5f5; padding: 10px; border-radius: 5px;"}
+"The relationship between interest rates and GDP growth is a fundamental concept in macroeconomics, as changes in interest rates can influence economic activity, consumer behavior, and investment decisions. Here's how they are generally related:
+
+1. Interest Rates and Consumption: Interest rates have a direct impact on consumer borrowing and spending. When interest rates are low, borrowing is... 
+   
+..."
+:::
+
+## Highest level of abstraction: Embeddings 
+
+```{python}
+#| echo: true
+#| code-line-numbers: "|1|3-5|6"
+from llmapi import embeddings
+
+# Generate embeddings for a single text
+text = "The Federal Reserve's monetary policy impacts market behavior"
+emb = embeddings(text)
+print(f"Embedding shape: {emb.shape}\nFirst values of the embedding vector: {emb[0,:4]}")
+```
+::: {.fragment}
+```{.output}
+Embedding shape: (1, 3072)
+First values of the embedding vector: [-0.0135 -0.0093 -0.0147  0.0097]
+```
+:::
+
+<br>
+
+::: {.fragment}
+```{python}
+#| echo: true
+#| code-line-numbers: "1-6|7|8"
+# Generate embeddings for multiple texts
+texts = [
+    "Supply chain disruptions",
+    "Consumer price index trends",
+    "Labor market conditions"
+]
+embs = embeddings(texts)
+print(f"Embedding shape: {embs.shape}\nFirst values of the embedding vectors:\n {embs[:,:4]}")
+```
+:::
+
+::: {.fragment}
+```{.output}
+Embedding shape: (3, 3072)
+First values of the embedding vectors:
+[[-0.0141  0.0009  0.0041  0.0265]
+ [-0.0303 -0.0224 -0.0099  0.0270]
+ [ 0.0031 -0.0209  0.0026  0.0175]]
+```
+:::
+
+## Reasoning models easily accessible
+
+```{python}
+#| echo: true
+#| code-line-numbers: "|4-5|6"
+#| code-overflow: wrap
+
+from llmapi import gpt
+
+# Connect the client to a reasoning model
+gpt.set_model("o1-preview")
+response = gpt("Sophia owns a fruit stand with 5 apples, 10 oranges, and 8 pears. A customer buys 3 apples, paying with 6 oranges. Another customer trades 4 pears for 2 apples and 2 oranges. The market prices are 2 apples = 5 EUR, 3 oranges = 4 EUR, and 4 pears = 6 EUR. What is the total value of Sophia’s inventory after these transactions?")
+print(response)
+```
+
+::: {.fragment }
+To determine the total value of Sophia's inventory after the transactions, we model the problem as a system of equations:
+$$
+\begin{aligned}
+    2A &= 5 &\Rightarrow A &= \frac{5}{2} = 2.50 \\
+    3O &= 4 &\Rightarrow O &= \frac{4}{3} \\
+    4P &= 6 &\Rightarrow P &= \frac{6}{4} = 1.50
+\end{aligned}
+$$
+...
+:::
+
+## Consistency across programming languages {.smaller}
+
+:::::: {.panel-tabset}
+
+#### llm
+
+:::: columns
+::: {.column width="50%"}
+#### **MATLAB**
+:::
+::: {.column width="50%"}
+#### **R**
+:::
+::::
+
+:::: columns
+::: {.column width="50%"}
+#### Chat Completion
+```{.matlab code-line-numbers="|1,4,8"}
+import llmapi.gpt
+
+% Initial GPT response with default prompt
+response = llmapi.gpt("Hi there!");
+disp(response);
+
+% Customize the system prompt
+llmapi.gpt('set_system_prompt', "You are a macroeconomics expert.");
+response = llmapi.gpt("Explain the relationship between interest rates and GDP growth.")
+```
+:::
+
+
+::: {.column width="50%"}
+#### Chat Completion
+```{.r code-line-numbers="|1,4,8"}
+library(llmapi)
+
+# Initial GPT response with default prompt
+response <- gpt$call("Hi there!")
+cat("GPT-4o response:", response, "\n")
+
+# Customize the system prompt
+gpt$set_system_prompt("You are a macroeconomics expert.")
+response <- gpt$call("Explain the relationship between interest rates and GDP growth.")
+```
+:::
+
+::::
+
+\
+
+
+::::: {.fragment}
+:::: {.columns}
+
+::: {.column}
+#### Embeddings 
+```{.matlab code-line-numbers="|3,12"}
+% Generate embeddings for a single text
+text = "The Federal Reserve's monetary policy impacts market behavior"
+emb = llmapi.embeddings(text)
+disp(emb)
+
+% Generate embeddings for multiple texts
+texts = [
+    "Supply chain disruptions",
+    "Consumer price index trends",
+    "Labor market conditions"
+]
+embs = llmapi.embeddings(texts)
+```
+:::
+
+::: {.column}
+#### Embeddings
+```{.r code-line-numbers="|3,12"}
+# Generate embeddings for a single text
+text <- "The Federal Reserve's monetary policy impacts market behavior"
+emb <- embeddings$call(text)
+print(dim(emb))  
+
+# Generate embeddings for multiple texts
+texts <- c(
+  "Supply chain disruptions",
+  "Consumer price index trends",
+  "Labor market conditions"
+)
+embs <- embeddings$call(texts)
+```
+:::
+
+:::: 
+:::::
+
+#### reasoning
+
+:::: {.columns}
+
+::: {.column}
+#### Chat Completion
+```{.matlab code-line-numbers="|3-5,10"}
+import llmapi.gpt
+
+% Connect the client to a reasoning model
+llmapi.gpt('set_model', "o1-preview");
+response = llmapi.gpt("Sophia owns a fruit stand with 5 apples, 10 oranges, and 8 pears. A customer buys 3 apples, paying with 6 oranges. Another customer trades 4 pears for 2 apples and 2 oranges. The market prices are 2 apples = 5 EUR, 3 oranges = 4 EUR, and 4 pears = 6 EUR. What is the total value of Sophia’s inventory after these transactions?")
+
+disp(response)
+
+% Switch to lightweight reasoning model
+llmapi.gpt("set_model", "o1-mini")
+```
+:::
+
+::: {.column}
+#### Chat Completion
+```{.r code-line-numbers="|3-5,10"}
+library(llmapi)
+
+% Connect the client to a reasoning model
+gpt$set_model("o1-preview")
+response = gpt$call("Sophia owns a fruit stand with 5 apples, 10 oranges, and 8 pears. A customer buys 3 apples, paying with 6 oranges. Another customer trades 4 pears for 2 apples and 2 oranges. The market prices are 2 apples = 5 EUR, 3 oranges = 4 EUR, and 4 pears = 6 EUR. What is the total value of Sophia’s inventory after these transactions?")
+
+cat(response)
+
+% Switch to lightweight reasoning model
+gpt$set_model("o1-mini")
+```
+:::
+
+:::: 
+
+:::::: 
+
+## Fine-Grained API Control {.smaller auto-animate="true"}
+
+
+Designed for **technical users** who need precise control over API request parameters.
+
+- Auto-refreshing client seamlessly handles token expiration.
+
+
+```{.python}
+from llmapi import get_auto_client
+
+# Get an auto-refreshing client for GPT-4o.
+auto_client = get_auto_client("GPT-4o")
+```
+
+:::{.fragment}
+:::{.callout-warning}
+### MATLAB/R
+Fine-grained control is only available in `Python` for now.
+:::
+:::
+
+## Fine-Grained API Control {.smaller auto-animate="true"}
+
+Designed for **technical users** who need precise control over API request parameters.
+
+- Auto-refreshing client seamlessly handles token expiration.
+- Consistent interface with OpenAI’s API.
+
+
+<style>
+  /* Adjust the height of the code block */
+  #specific-code-block pre {
+    max-height: 250px;
+    overflow-y: auto;
+  }
+</style>
+::: {#specific-code-block}
+```{.python code-line-numbers="|7-19|13-18" code-block-height="250px"}
+from llmapi import AutoRefreshingClient
+
+# Get an auto-refreshing client for GPT-4o.
+client = AutoRefreshingClient("GPT-4o")
+
+# Send a custom chat completion request with additional parameters.
+response = client.chat.completions.create(
+    messages=[
+        {"role": "system", "content": "You are an econometric specialist focused on inflation dynamics."},
+        {"role": "user", "content": "Forecast how a 75 basis point increase by the Fed would affect core inflation over the next 3 quarters."}
+    ],
+    temperature=0.2,         # Lower temperature for more deterministic economic forecasts
+    top_p=0.85,              # Slightly constrained token selection for consistency
+    presence_penalty=0.3,    # Encourage broader coverage of economic factors
+    frequency_penalty=0.2,   # Reduce repetition of standard economic phrases
+    stop=["Conclusion:"],    # Stop generation before conclusion to allow custom analysis
+    n=100                    # Generate multiple forecast scenarios for sensitivity analysis
+)
+
+print(response)
+```
+:::
+
+::: {.fragment}
+In this example:
+
+- An economist generates multiple forecast scenarios (`n=100`) with custom parameter tuning for sensitivity analysis.
+- If the token expires during a long-running process, the auto-refreshing client will **automatically refresh** with a new token.
+:::
+
+## llmapi: Connect with the ECB LLM Environment
+
+Get started [here](https://internal-open-source.pages.sofa.dev/helpers/ecb-llm-clients/llm-clients/docs/){target="_blank"}!
+
+[![](assets/header.gif){width=40%}](https://internal-open-source.pages.sofa.dev/helpers/ecb-llm-clients/llm-clients/docs/){target="_blank"}
+
+::: aside
+For additional questions please contact [Aarab, Ilias](mailto:ilias.aarab@ecb.europa.eu?subject=llmapi%20|%20Inquiry).
+:::
