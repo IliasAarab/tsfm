@@ -2,7 +2,7 @@
 title: "ESCB & SSM HACKATHON"
 subtitle: "Foundation Models for Macroeconomic Forecasting"
 author: "Ilias Aarab"
-institute: "DG Economics"
+institute: "ECB/DG Economics"
 date: last-modified
 execute:
  eval: false
@@ -11,7 +11,7 @@ format:
       transition: slide
       height: 750
       footer: ESCB & SSM HACKATHON - Foundation Models
-      self-contained: true
+      # self-contained: true
         
 ---
 
@@ -38,7 +38,7 @@ format:
 ::: {.fragment}
 ::: {.callout-note}
 ### Key Insight
-Foundation models are already trained. You skip the estimation step entirely.
+Foundation models are already estimated. You skip the estimation step entirely.
 :::
 :::
 
@@ -69,7 +69,7 @@ Foundation models are already trained. You skip the estimation step entirely.
 ::: {.fragment}
 ::: {.callout-tip}
 ### For Macroeconomic Forecasting
-Foundation models can capture complex patterns that traditional models may miss, especially with limited historical data
+Foundation models can capture complex patterns that traditional models may miss, especially with limited historical data.
 :::
 :::
 
@@ -118,23 +118,32 @@ Two model families stand out for econometric forecasting:
 ::: {.column width="50%"}
 **Chronos Family**
 
-- **Chronos-Bolt**: Fast inference
+<div style="font-size: .85em;">
+- **Chronos-Bolt**: Fast inference  
 - **Chronos-2**: Latest, multivariate
+</div>
+
 
 ✅ Uncertainty quantification  
 ✅ Multivariate (Chronos-2)  
 ✅ Fast inference  
+
+![](../img/chronos_greek.png){width="30%"}
 :::
 
 ::: {.column width="50%"}
 **Moirai Family**
 
+<div style="font-size: .85em;">
 - **Moirai 1.1**: Proven performance
 - **Moirai 2.0**: Latest architecture
+</div>
 
 ✅ Uncertainty quantification  
 ✅ Multivariate support  
 ✅ Strong generalization  
+
+![](../img/moirai_greek.png){width="25%"}
 :::
 ::::
 
@@ -149,8 +158,8 @@ The hackathon runs in a fully-equipped AWS SageMaker environment:
 ::: {.incremental}
 **Compute Resources:**
 
-- 💻 **CPU instance** for standard workloads
-- 🚀 **GPU instance** for faster model inference
+- 💻 **2 × CPU instances** for development and experimentation
+- 🚀 Each CPU instance is paired with its own **GPU accelerator** for fast model training and inference
 - 📦 **S3 bucket** for data storage
 
 **Development Tools:**
@@ -167,7 +176,7 @@ The hackathon runs in a fully-equipped AWS SageMaker environment:
 We provide **three tiers** of access to foundation models:
 ::: 
 
-::: {.incremental style="font-size: 0.85em;"}
+::: {.incremental style="font-size: 0.75em;"}
 **Tier 1: TSFM Package** ⭐ *Easiest*
 
 - High-level Python package
@@ -190,7 +199,7 @@ We provide **three tiers** of access to foundation models:
 
 ## Tier 1: TSFM Package
 
-![](../img/logo.png){width="30%"}
+![](../img/logo.png){width="50%"}
 
 **Why TSFM?**
 
@@ -234,14 +243,18 @@ yhs.summary()  # See metrics
 yhs.plot_actual_vs_pred(horizon=1)  # Visualize forecasts
 ```
 
-::: {.fragment}
+:::: {.fragment}
+
 That's it! The model automatically:
-:::: {.incremental}
+
+::: {.incremental style="font-size: 0.85em;"}
+
 - Handles loading the backbone + running it efficiently to generate predictions
 - Computes accuracy metrics
 - Provides prediction intervals
-::::
 :::
+
+::::
 
 ## Switch Models Effortlessly
 
@@ -325,6 +338,37 @@ yhs.df_preds.xs(0.9, level='quantile')
 :::
 ::::
 
+## What You Get
+
+**Predictions**
+```{python}
+#| echo: true
+# MultiIndex DataFrame
+yhs.df_preds
+```
+![](../img/tsfm_df_preds.png)
+
+
+## What You Get
+
+**Summary statistics**
+```{python}
+#| echo: true
+# Quick summary
+yhs.summary()
+```
+![](../img/tsfm_result_summary.png)
+
+## What You Get
+
+**Visualisation**
+```{python}
+#| echo: true
+# Plot with uncertainty bands
+yhs.plot_actual_vs_pred(horizon=6)
+```
+![](../img/tsfm_vis.png)
+
 ## Tier 2 & Tier 3
 
 **Tier 2: Ready-Made Notebooks** 
@@ -358,7 +402,7 @@ pip install tsfmecb
 ```
 :::
 
-[![](../img/logo.png){width=25%}](https://github.com/IliasAarab/tsfm)
+[![](../img/logo.png){width=30%}](https://github.com/IliasAarab/tsfm)
 
 ::: aside
 Questions? Contact [Aarab, Ilias](mailto:ilias.aarab@ecb.europa.eu?subject=ECB%20Hackathon%20|%20TSFM)
