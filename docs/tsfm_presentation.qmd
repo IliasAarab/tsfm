@@ -11,7 +11,7 @@ format:
       transition: slide
       height: 750
       footer: ESCB & SSM HACKATHON - Foundation Models
-      # self-contained: true
+      self-contained: true
         
 ---
 
