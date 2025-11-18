@@ -128,7 +128,7 @@ Two model families stand out for econometric forecasting:
 ✅ Multivariate (Chronos-2)  
 ✅ Fast inference  
 
-![](../img/chronos_greek.png){width="30%"}
+![](img/chronos_greek.png){width="30%"}
 :::
 
 ::: {.column width="50%"}
@@ -143,7 +143,7 @@ Two model families stand out for econometric forecasting:
 ✅ Multivariate support  
 ✅ Strong generalization  
 
-![](../img/moirai_greek.png){width="25%"}
+![](img/moirai_greek.png){width="25%"}
 :::
 ::::
 
@@ -199,7 +199,7 @@ We provide **three tiers** of access to foundation models:
 
 ## Tier 1: TSFM Package
 
-![](../img/logo.png){width="50%"}
+![](img/logo.png){width="50%"}
 
 **Why TSFM?**
 
@@ -346,7 +346,7 @@ yhs.df_preds.xs(0.9, level='quantile')
 # MultiIndex DataFrame
 yhs.df_preds
 ```
-![](../img/tsfm_df_preds.png)
+![](img/tsfm_df_preds.png)
 
 
 ## What You Get
@@ -357,7 +357,7 @@ yhs.df_preds
 # Quick summary
 yhs.summary()
 ```
-![](../img/tsfm_result_summary.png)
+![](img/tsfm_result_summary.png)
 
 ## What You Get
 
@@ -367,7 +367,7 @@ yhs.summary()
 # Plot with uncertainty bands
 yhs.plot_actual_vs_pred(horizon=6)
 ```
-![](../img/tsfm_vis.png)
+![](img/tsfm_vis.png)
 
 ## Tier 2 & Tier 3
 
@@ -402,7 +402,7 @@ pip install tsfmecb
 ```
 :::
 
-[![](../img/logo.png){width=30%}](https://github.com/IliasAarab/tsfm)
+[![](img/logo.png){width=30%}](https://github.com/IliasAarab/tsfm)
 
 ::: aside
 Questions? Contact [Aarab, Ilias](mailto:ilias.aarab@ecb.europa.eu?subject=ECB%20Hackathon%20|%20TSFM)
