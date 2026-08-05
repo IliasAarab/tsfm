@@ -1,4 +1,15 @@
 <div align="center">
+  
+  [![PyPI Downloads](https://static.pepy.tech/personalized-badge/tsfmecb?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/tsfmecb)
+  [![PyPI Version](https://img.shields.io/pypi/v/tsfmecb)](https://pypi.org/project/tsfmecb/)
+  [![Python](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/downloads/)
+  
+</div>
+
+----
+
+
+<div align="center">
   <img src="https://raw.githubusercontent.com/IliasAarab/tsfm/main/docs/img/logo.png" alt="TSFM Logo" width="400"/>
 </div>
 
